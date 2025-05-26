@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+
+{% block title %}Inicio - Sistema de Inventario{% endblock %}
+
+{% block content %}
+{% if error %}
+<div class="alert alert-danger" role="alert">
+    {{ error }}
+</div>
+{% else %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1 class="display-4 mb-4">Panel de Control</h1>
+    </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="row g-4 mb-4">
+    <div class="col-md-6 col-lg-3">
+        <div class="card bg-primary text-white h-100">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-box me-2"></i>
+                    Total Productos
+                </h5>
+                <p class="display-6">{{ total_products }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-lg-3">
+        <div class="card bg-success text-white h-100">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-cubes me-2"></i>
+                    Stock Total
+                </h5>
+                <p class="display-6">{{ total_stock }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-lg-3">
+        <div class="card bg-info text-white h-100">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-exchange-alt me-2"></i>
+                    Movimientos Hoy
+                </h5>
+                <p class="display-6">{{ movements_today }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-lg-3">
+        <div class="card bg-warning text-white h-100">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Stock Bajo
+                </h5>
+                <p class="display-6">{{ low_stock }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activity and Low Stock Tables -->
+<div class="row">
+    <!-- Recent Activity -->
+    <div class="col-lg-8 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-history me-2"></i>
+                    Actividad Reciente
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Producto</th>
+                                <th>Tipo</th>
+                                <th>Cantidad</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for movement in recent_movements %}
+                            <tr>
+                                <td>{{ movement.date|date:"d/m/Y H:i" }}</td>
+                                <td>{{ movement.product.product_name }}</td>
+                                <td>
+                                    {% if movement.movement_type == 'INBOUND' %}
+                                    <span class="badge bg-success">Entrada</span>
+                                    {% else %}
+                                    <span class="badge bg-danger">Salida</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ movement.quantity }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Low Stock Alert -->
+    <div class="col-lg-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    Alertas de Stock Bajo
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group">
+                    {% for stock in low_stock_items %}
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">{{ stock.product.product_name }}</h6>
+                            <small class="text-danger">{{ stock.quantity }} unidades</small>
+                        </div>
+                        <p class="mb-1">SKU: {{ stock.product.sku }}</p>
+                        <small>Ubicación: {{ stock.product.location }}</small>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %} 

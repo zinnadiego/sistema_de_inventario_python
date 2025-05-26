@@ -1,0 +1,13 @@
+django==5.0.1
+fastapi==0.109.0
+uvicorn==0.27.0
+sqlalchemy==2.0.25
+# psycopg2-binary==2.9.9  # Requiere Microsoft Visual C++ Build Tools
+python-jose==3.3.0
+passlib==1.7.4
+python-multipart==0.0.8
+python-dotenv==1.0.0
+
+# Dependencias de Machine Learning (instalar cuando se necesiten)
+# scikit-learn==1.4.0
+# pandas==2.2.0 
