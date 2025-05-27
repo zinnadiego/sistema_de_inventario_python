@@ -1,6 +1,6 @@
 # Sistema de Inventario
 
-Este proyecto es un sistema de gestión de inventario que combina Django y FastAPI para proporcionar una robusta aplicación web con una API RESTful.
+Este proyecto es un sistema de gestión de inventario que combina Django y FastAPI para proporcionar una robusta aplicación web con una API RESTful y capacidades predictivas de stock.
 
 ## Tecnologías y Librerías Utilizadas
 
@@ -13,6 +13,8 @@ Este proyecto es un sistema de gestión de inventario que combina Django y FastA
 - **Passlib (1.7.4)**: Para el manejo seguro de contraseñas
 - **Python-Multipart (0.0.8)**: Para el manejo de formularios y archivos en FastAPI
 - **Python-dotenv (1.0.0)**: Para la gestión de variables de entorno
+- **Scikit-learn**: Para el análisis predictivo de stock
+- **Pandas**: Para el procesamiento de datos históricos
 
 ### Base de Datos
 - **PostgreSQL** (a través de psycopg2-binary): Sistema de gestión de base de datos relacional
@@ -57,6 +59,30 @@ El proyecto estará disponible en:
 - Interfaz web: http://127.0.0.1:8000
 - Panel de administración: http://127.0.0.1:8000/admin
 - Documentación de la API: http://127.0.0.1:8000/api/docs
+
+## Características del Dashboard
+
+### Panel de Control Inteligente
+- **Estadísticas en Tiempo Real**: Visualización de productos totales, stock total y movimientos diarios
+- **Alertas de Stock**: Sistema de alertas visuales para productos con stock crítico o agotado
+- **Umbrales Dinámicos**: Configuración automática de umbrales basada en el precio del producto:
+  * Productos ≤$10: 50 unidades
+  * Productos ≤$100: 15 unidades
+  * Productos ≤$500: 5 unidades
+  * Productos >$500: 3 unidades
+
+### Sistema Predictivo
+- **Predicciones de Stock**: Estimaciones a 7 días basadas en histórico de movimientos
+- **Indicadores de Tendencia**: 
+  * 🟢 Tendencia al alza (verde)
+  * 🔴 Tendencia a la baja (rojo)
+  * 🟡 Tendencia estable (amarillo)
+- **Análisis de Datos**: Basado en movimientos históricos de los últimos 30 días
+
+### Monitoreo de Movimientos
+- **Registro Detallado**: Seguimiento de entradas y salidas de inventario
+- **Visualización en Tiempo Real**: Últimos movimientos con indicadores de tipo
+- **Estado del Stock**: Indicadores visuales del estado actual de cada producto
 
 ## Caso de Uso Práctico
 
@@ -103,6 +129,8 @@ El proyecto estará disponible en:
 ### Características Principales
 - Gestión completa de productos (CRUD)
 - Control de stock en tiempo real
+- Sistema predictivo de stock
+- Dashboard interactivo con alertas
 - API REST documentada con Swagger UI
 - Panel de administración intuitivo
 - Sistema de autenticación seguro
@@ -112,8 +140,4 @@ El proyecto estará disponible en:
 - El sistema utiliza autenticación JWT para la API
 - Todas las operaciones de la API requieren autenticación
 - Los endpoints están protegidos y requieren tokens válidos
-
-## Próximas Funcionalidades
-- Integración con machine learning para predicción de stock (pendiente de implementar)
-- Reportes y análisis avanzados
-- Dashboard con métricas en tiempo real 
+- El sistema predictivo requiere al menos 2 movimientos históricos por producto

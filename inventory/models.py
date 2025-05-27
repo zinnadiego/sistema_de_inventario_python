@@ -35,10 +35,18 @@ class InventoryMovement(models.Model):
         return f"{self.movement_id} - {self.product.product_name}"
 
 class CurrentStock(models.Model):
+    STOCK_STATUS_CHOICES = [
+        ('OK', 'OK'),
+        ('CRITICAL', 'Critical'),
+        ('OUT_OF_STOCK', 'Out of Stock'),
+    ]
+    
     product = models.OneToOneField(Product, on_delete=models.CASCADE, primary_key=True)
     quantity = models.IntegerField()
     last_updated = models.DateTimeField(auto_now=True)
     total_inventory_cost = models.DecimalField(max_digits=10, decimal_places=2)
+    stock_status = models.CharField(max_length=20, choices=STOCK_STATUS_CHOICES, default='OK')
+    threshold = models.IntegerField(default=5)
 
     def __str__(self):
         return f"{self.product.product_name} - Qty: {self.quantity}"

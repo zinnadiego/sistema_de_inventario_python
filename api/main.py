@@ -7,6 +7,7 @@ from typing import List, Optional
 from datetime import datetime
 from pydantic import BaseModel
 from asgiref.sync import sync_to_async
+from .predictor import AdvancedStockPredictor
 
 # Configurar Django
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'inventory_system.settings')
@@ -54,6 +55,17 @@ class ProductResponse(ProductBase):
     class Config:
         from_attributes = True
 
+# Nuevo modelo Pydantic para predicciones
+class StockPrediction(BaseModel):
+    date: str
+    predicted_quantity: float
+    confidence_score: float
+    model_used: str
+    trend: str
+
+# Crear instancia del predictor
+stock_predictor = AdvancedStockPredictor()
+
 async def authenticate_user(username: str, password: str):
     try:
         # Convertir la autenticación síncrona a asíncrona
@@ -94,6 +106,38 @@ async def get_product(product_id: str, token: str = Depends(oauth2_scheme)):
         return product
     except Product.DoesNotExist:
         raise HTTPException(status_code=404, detail="Product not found")
+
+# Nuevo endpoint para predicciones
+@app.get("/api/products/{product_id}/predict", response_model=List[StockPrediction])
+async def predict_stock(product_id: str, days: int = 7, token: str = Depends(oauth2_scheme)):
+    try:
+        # Obtener historial de movimientos
+        movements = await sync_to_async(list)(InventoryMovement.objects.filter(
+            product__product_id=product_id
+        ).order_by('date'))
+        
+        # Preparar datos históricos
+        historical_data = [
+            {
+                'date': movement.date,
+                'quantity': movement.quantity
+            }
+            for movement in movements
+        ]
+        
+        # Si no hay suficientes datos, retornar error
+        if len(historical_data) < 2:
+            raise HTTPException(
+                status_code=400,
+                detail="No hay suficientes datos históricos para hacer una predicción"
+            )
+        
+        # Realizar predicción
+        predictions = stock_predictor.predict_next_days(historical_data, days)
+        
+        return predictions
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 # Punto de entrada para uvicorn
 if __name__ == "__main__":

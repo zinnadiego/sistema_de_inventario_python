@@ -8,6 +8,11 @@ passlib==1.7.4
 python-multipart==0.0.8
 python-dotenv==1.0.0
 
+# Usar versiones más antiguas que tienen wheels precompilados disponibles
+scikit-learn==1.0.2
+pandas==1.3.5
+numpy==1.21.6
+
 # Dependencias de Machine Learning (instalar cuando se necesiten)
 # scikit-learn==1.4.0
 # pandas==2.2.0 
