@@ -41,6 +41,48 @@
         </div>
     </div>
 
+    <!-- Gráficos de Predicción -->
+    {% if predictions %}
+    <div class="row mb-4">
+        <!-- Gráfico de Tendencias -->
+        <div class="col-md-8">
+            <div class="card h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Tendencias de Stock</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="stockTrendChart" style="max-height: 250px;"></canvas>
+                </div>
+            </div>
+        </div>
+        <!-- Gráfico de Estado de Stock -->
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">Estado del Stock</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="stockStatusChart" style="max-height: 250px;"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráfico de Comparación -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">Stock Actual vs. Predicción (7 días)</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="stockComparisonChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     <!-- Alertas de Stock -->
     {% if critical_stock %}
     <div class="row mb-4">
@@ -102,36 +144,8 @@
                                     <th>Tendencia</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                {% for prediction in predictions %}
-                                <tr>
-                                    <td>{{ prediction.product.product_name }}</td>
-                                    <td>{{ prediction.current_stock }}</td>
-                                    <td>{{ prediction.threshold }}</td>
-                                    <td>
-                                        {% with pred=prediction.predictions|last %}
-                                        {{ pred.predicted_quantity|floatformat:0 }} unidades
-                                        {% endwith %}
-                                    </td>
-                                    <td>
-                                        {% with pred=prediction.predictions|last %}
-                                        {% if pred.trend == 'UP' %}
-                                        <div class="alert alert-success mb-0 py-1">
-                                            <i class="fas fa-arrow-up"></i> Tendencia al alza
-                                        </div>
-                                        {% elif pred.trend == 'DOWN' %}
-                                        <div class="alert alert-danger mb-0 py-1">
-                                            <i class="fas fa-arrow-down"></i> Tendencia a la baja
-                                        </div>
-                                        {% else %}
-                                        <div class="alert alert-warning mb-0 py-1">
-                                            <i class="fas fa-arrow-right"></i> Tendencia estable
-                                        </div>
-                                        {% endif %}
-                                        {% endwith %}
-                                    </td>
-                                </tr>
-                                {% endfor %}
+                            <tbody id="predictions-table-body">
+                                <!-- La tabla se llenará con JavaScript -->
                             </tbody>
                         </table>
                     </div>
@@ -190,4 +204,203 @@
         </div>
     </div>
 </div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+{% if predictions %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    try {
+        // Datos para los gráficos
+        console.log('Raw predictions:', '{{ predictions|safe }}');
+        const predictions = JSON.parse('{{ predictions|safe }}');
+        console.log('Parsed predictions:', predictions);
+
+        if (!predictions || predictions.length === 0) {
+            console.error('No hay datos de predicción disponibles');
+            return;
+        }
+
+        // Verificar estructura de datos
+        console.log('Primer producto:', predictions[0].product);
+        console.log('Primera predicción:', predictions[0].predictions);
+        
+        // Gráfico de Tendencias
+        const trendCtx = document.getElementById('stockTrendChart');
+        if (!trendCtx) {
+            console.error('No se encontró el elemento canvas para el gráfico de tendencias');
+            return;
+        }
+
+        new Chart(trendCtx, {
+            type: 'line',
+            data: {
+                labels: predictions.map(p => p.product.product_name),
+                datasets: [{
+                    label: 'Stock Actual',
+                    data: predictions.map(p => p.current_stock),
+                    borderColor: 'rgb(75, 192, 192)',
+                    tension: 0.1,
+                    fill: false
+                }, {
+                    label: 'Stock Predicho',
+                    data: predictions.map(p => {
+                        const lastPred = p.predictions[p.predictions.length - 1];
+                        console.log('Última predicción para', p.product.product_name, ':', lastPred);
+                        return lastPred.predicted_quantity;
+                    }),
+                    borderColor: 'rgb(255, 99, 132)',
+                    tension: 0.1,
+                    fill: false
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Evolución del Stock por Producto'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        // Gráfico de Estado de Stock
+        const statusCtx = document.getElementById('stockStatusChart');
+        if (!statusCtx) {
+            console.error('No se encontró el elemento canvas para el gráfico de estado');
+            return;
+        }
+
+        const criticalCount = predictions.filter(p => p.current_stock <= p.threshold).length;
+        const normalCount = predictions.length - criticalCount;
+        console.log('Conteos de estado:', { normal: normalCount, critical: criticalCount });
+        
+        new Chart(statusCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Stock Normal', 'Stock Crítico'],
+                datasets: [{
+                    data: [normalCount, criticalCount],
+                    backgroundColor: ['rgb(75, 192, 192)', 'rgb(255, 99, 132)']
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Distribución del Estado de Stock'
+                    }
+                }
+            }
+        });
+
+        // Gráfico de Comparación
+        const comparisonCtx = document.getElementById('stockComparisonChart');
+        if (!comparisonCtx) {
+            console.error('No se encontró el elemento canvas para el gráfico de comparación');
+            return;
+        }
+
+        new Chart(comparisonCtx, {
+            type: 'bar',
+            data: {
+                labels: predictions.map(p => p.product.product_name),
+                datasets: [{
+                    label: 'Stock Actual',
+                    data: predictions.map(p => {
+                        console.log('Stock actual para', p.product.product_name, ':', p.current_stock);
+                        return p.current_stock;
+                    }),
+                    backgroundColor: 'rgba(75, 192, 192, 0.5)',
+                    borderColor: 'rgb(75, 192, 192)',
+                    borderWidth: 1
+                }, {
+                    label: 'Stock Predicho (7 días)',
+                    data: predictions.map(p => {
+                        const pred = p.predictions[p.predictions.length - 1].predicted_quantity;
+                        console.log('Predicción para', p.product.product_name, ':', pred);
+                        return pred;
+                    }),
+                    backgroundColor: 'rgba(255, 99, 132, 0.5)',
+                    borderColor: 'rgb(255, 99, 132)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                },
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Comparación de Stock Actual vs Predicción'
+                    }
+                }
+            }
+        });
+
+        // Llenar la tabla de predicciones
+        const tableBody = document.getElementById('predictions-table-body');
+        if (tableBody) {
+            predictions.forEach(prediction => {
+                const lastPred = prediction.predictions[prediction.predictions.length - 1];
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${prediction.product.product_name}</td>
+                    <td>${prediction.current_stock}</td>
+                    <td>${prediction.threshold}</td>
+                    <td>${Math.round(lastPred.predicted_quantity)} unidades</td>
+                    <td>
+                        <div class="alert ${getTrendClass(lastPred.trend)} mb-0 py-1">
+                            <i class="fas fa-arrow-${getTrendIcon(lastPred.trend)}"></i> 
+                            ${getTrendText(lastPred.trend)}
+                        </div>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+    } catch (error) {
+        console.error('Error al procesar los datos:', error);
+    }
+});
+
+function getTrendClass(trend) {
+    switch (trend) {
+        case 'UP': return 'alert-success';
+        case 'DOWN': return 'alert-danger';
+        default: return 'alert-warning';
+    }
+}
+
+function getTrendIcon(trend) {
+    switch (trend) {
+        case 'UP': return 'up';
+        case 'DOWN': return 'down';
+        default: return 'right';
+    }
+}
+
+function getTrendText(trend) {
+    switch (trend) {
+        case 'UP': return 'Tendencia al alza';
+        case 'DOWN': return 'Tendencia a la baja';
+        default: return 'Tendencia estable';
+    }
+}
+</script>
+{% endif %}
 {% endblock %} 

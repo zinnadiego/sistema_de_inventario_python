@@ -35,17 +35,12 @@ El sistema implementa un modelo de permisos simplificado con dos roles principal
   - Acceso de solo lectura a los módulos
   - No puede realizar modificaciones
 
-### Gestión de Usuarios
-- La creación y gestión de usuarios se realiza desde el panel de administración
-- Cada usuario debe tener asignado uno de los roles disponibles
-- Los permisos se asignan automáticamente según el rol seleccionado
-- La interfaz de gestión de usuarios ha sido simplificada para facilitar la administración
-
 ## Manual de Instalación y Uso
 
 ### Requisitos Previos
 - Python 3.8 o superior
 - pip (gestor de paquetes de Python)
+- Git
 
 ### Pasos de Instalación
 
@@ -55,258 +50,129 @@ git clone <url-del-repositorio>
 cd <nombre-del-directorio>
 ```
 
-2. Instalar las dependencias:
+2. Crear y activar entorno virtual:
 ```bash
-py -m pip install -r requirements.txt
+python -m venv venv
+# En Windows:
+venv\Scripts\activate
+# En Unix o MacOS:
+source venv/bin/activate
 ```
 
-3. Configurar la base de datos:
+3. Instalar dependencias:
 ```bash
-py manage.py migrate
+pip install -r requirements.txt
 ```
 
-4. Crear un superusuario para acceder al panel de administración:
+4. Configurar la base de datos:
 ```bash
-py manage.py createsuperuser
+# Crear la base de datos
+python manage.py migrate
+
+# Crear superusuario
+python create_superuser.py
+
+# Cargar datos iniciales (opcional)
+python load_initial_data.py
 ```
 
-5. Configurar los roles iniciales:
+5. Iniciar el servidor:
 ```bash
-py manage.py setup_roles
+python manage.py runserver
 ```
 
-### Ejecutar el Proyecto
+El sistema estará disponible en `http://127.0.0.1:8001/`
 
-Para iniciar el servidor de desarrollo:
+## Estructura del Proyecto
+
+- `api/`: Endpoints de la API REST
+- `inventory/`: Aplicación principal de gestión de inventario
+- `templates/`: Plantillas HTML
+- `static/`: Archivos estáticos (CSS, JS, imágenes)
+- `migrations/`: Migraciones de la base de datos
+
+## Base de Datos
+
+El proyecto utiliza SQLite por defecto. Las migraciones están incluidas en el repositorio.
+
+Para resetear la base de datos:
+1. Eliminar `db.sqlite3` si existe
+2. Ejecutar `python manage.py migrate`
+3. Ejecutar `python create_superuser.py`
+4. Opcionalmente, ejecutar `python load_initial_data.py`
+
+## Desarrollo
+
+Para crear nuevas migraciones después de cambios en los modelos:
 ```bash
-py -m uvicorn inventory_system.asgi:application --reload
+python manage.py makemigrations
+python manage.py migrate
 ```
 
-El proyecto estará disponible en:
-- Interfaz web: http://127.0.0.1:8000
-- Panel de administración: http://127.0.0.1:8000/admin
-- Documentación de la API: http://127.0.0.1:8000/api/docs
-
-## Características del Dashboard
-
-### Panel de Control Inteligente
-- **Estadísticas en Tiempo Real**: Visualización de productos totales, stock total y movimientos diarios
-- **Alertas de Stock**: Sistema de alertas visuales para productos con stock crítico o agotado
-- **Umbrales Dinámicos**: Configuración automática de umbrales basada en el precio del producto:
-  * Productos ≤$10: 50 unidades
-  * Productos ≤$100: 15 unidades
-  * Productos ≤$500: 5 unidades
-  * Productos >$500: 3 unidades
-
-### Sistema Predictivo
-- **Predicciones de Stock**: Estimaciones a 7 días basadas en histórico de movimientos
-- **Indicadores de Tendencia**: 
-  * 🟢 Tendencia al alza (verde)
-  * 🔴 Tendencia a la baja (rojo)
-  * 🟡 Tendencia estable (amarillo)
-- **Análisis de Datos**: Basado en movimientos históricos de los últimos 30 días
-
-### Monitoreo de Movimientos
-- **Registro Detallado**: Seguimiento de entradas y salidas de inventario
-- **Visualización en Tiempo Real**: Últimos movimientos con indicadores de tipo
-- **Estado del Stock**: Indicadores visuales del estado actual de cada producto
-
-## Caso de Uso Práctico
-
-### Gestión de Productos en el Inventario
-
-1. **Acceso al Sistema**
-   - Acceder al panel de administración en http://127.0.0.1:8000/admin
-   - Iniciar sesión con las credenciales del superusuario
-
-2. **Gestión vía Panel de Administración**
-   - Navegar a la sección "Products"
-   - Agregar, editar o eliminar productos
-   - Gestionar el stock actual
-   - Ver movimientos de inventario
-
-3. **Uso de la API REST**
-   - Obtener token de autenticación:
-     ```bash
-     curl -X POST "http://127.0.0.1:8000/api/token" -H "Content-Type: application/x-www-form-urlencoded" -d "username=tu_usuario&password=tu_contraseña"
-     ```
-
-   - Listar productos:
-     ```bash
-     curl -X GET "http://127.0.0.1:8000/api/products/" -H "Authorization: Bearer tu_token"
-     ```
-
-   - Crear nuevo producto:
-     ```bash
-     curl -X POST "http://127.0.0.1:8000/api/products/" \
-     -H "Authorization: Bearer tu_token" \
-     -H "Content-Type: application/json" \
-     -d '{
-         "product_id": "PRD001",
-         "product_name": "Laptop",
-         "sku": "LAP-001",
-         "unit_of_measure": "unidad",
-         "cost": 800.00,
-         "sale_price": 1200.00,
-         "category": "Electronics",
-         "location": "Warehouse A"
-     }'
-     ```
-
-### Características Principales
-- Gestión completa de productos (CRUD)
-- Control de stock en tiempo real
-- Sistema predictivo de stock
-- Dashboard interactivo con alertas
-- API REST documentada con Swagger UI
-- Panel de administración intuitivo
-- Sistema de autenticación seguro
-
-## Notas Adicionales
-- La documentación completa de la API está disponible en `/api/docs`
-- El sistema utiliza autenticación JWT para la API
-- Todas las operaciones de la API requieren autenticación
-- Los endpoints están protegidos y requieren tokens válidos
-- El sistema predictivo requiere al menos 2 movimientos históricos por producto
-
-def save_model(self, request, obj, form, change):
-    is_new = not obj.pk
-    super().save_model(request, obj, form, change)
-    selected_group = form.cleaned_data.get('group')
-    obj.groups.clear()
-    if selected_group:
-        obj.groups.add(selected_group)
-        obj.is_staff = (selected_group.name == 'Administrador')
-    else:
-        obj.is_staff = False
-    obj.save()
 
 ## API REST
 
-### Endpoints de Usuarios
+La API está organizada en las siguientes categorías:
 
-#### Listar Usuarios
-```bash
-GET /api/users/
-```
+### 1. Autenticación
+- **POST /api/token** - Iniciar sesión y obtener token
+  ```bash
+  curl -X POST "http://localhost:8001/api/token" \
+       -H "Content-Type: application/x-www-form-urlencoded" \
+       -d "username=usuario&password=contraseña"
+  ```
 
-#### Obtener Usuario
-```bash
-GET /api/users/{user_id}
-```
+### 2. Productos
+- **GET /api/products/** - Listar productos
+- **POST /api/products/** - Crear producto
+- **GET /api/products/{product_id}** - Obtener producto
+- **PUT /api/products/{product_id}** - Actualizar producto
 
-#### Crear Usuario
-```bash
-POST /api/users/
-{
-    "username": "string",
-    "email": "user@example.com",
-    "password": "string",
-    "first_name": "string",
-    "last_name": "string",
-    "group": "string" // "Administrador" o "Lectura"
-}
-```
+### 3. Predicción
+- **GET /api/products/{product_id}/predict** - Predecir stock
+  - Parámetros opcionales:
+    - days: Número de días para la predicción (default: 7)
 
-#### Actualizar Usuario
-```bash
-PUT /api/users/{user_id}
-{
-    "email": "string",
-    "first_name": "string",
-    "last_name": "string",
-    "password": "string",
-    "is_active": boolean,
-    "group": "string"
-}
-```
+### 4. Usuarios
+- **POST /api/users/** - Crear usuario
+- **PUT /api/users/{user_id}** - Actualizar usuario
+- **DELETE /api/users/{user_id}** - Eliminar usuario
 
-#### Eliminar Usuario
-```bash
-DELETE /api/users/{user_id}
-```
+### 5. Inventario
+- **POST /api/inventory/movements/** - Crear movimiento
+- **GET /api/inventory/movements/** - Listar movimientos
+  - Filtros disponibles:
+    - product_id
+    - movement_type (entrada/salida)
+    - start_date
+    - end_date
+- **POST /api/inventory/stock/{product_id}/add** - Agregar stock
+- **POST /api/inventory/stock/{product_id}/remove** - Remover stock
+- **GET /api/inventory/stock/** - Obtener stock actual
 
-### Endpoints de Productos
+## Características del Sistema
 
-#### Actualizar Producto
-```bash
-PUT /api/products/{product_id}
-{
-    "product_name": "string",
-    "sku": "string",
-    "category": "string",
-    "cost": float,
-    "sale_price": float,
-    "active": boolean
-}
-```
+### Control de Inventario
+- Gestión completa de productos (CRUD)
+- Registro de movimientos (entradas/salidas)
+- Control de stock en tiempo real
+- Alertas de stock bajo
+- Histórico de movimientos
 
-#### Eliminar Producto
-```bash
-DELETE /api/products/{product_id}
-```
+### Sistema Predictivo
+- Predicciones de stock a 7 días
+- Análisis de tendencias
+- Indicadores de rendimiento
+- Alertas predictivas
 
-### Endpoints de Stock
+### Seguridad
+- Autenticación mediante tokens
+- Sistema de roles y permisos
+- Protección de endpoints
+- Validación de datos
 
-#### Vender Producto
-```bash
-POST /api/products/{product_id}/sell
-{
-    "quantity": integer,
-    "order_id": "string",
-    "notes": "string"
-}
-```
-
-#### Comprar Producto
-```bash
-POST /api/products/{product_id}/buy
-{
-    "quantity": integer,
-    "order_id": "string",
-    "notes": "string"
-}
-```
-
-#### Actualizar Stock
-```bash
-PUT /api/products/{product_id}/stock
-{
-    "quantity": integer
-}
-```
-
-### Respuestas de la API
-
-#### Respuesta de Usuario
-```json
-{
-    "id": integer,
-    "username": "string",
-    "email": "string",
-    "first_name": "string",
-    "last_name": "string",
-    "is_active": boolean,
-    "groups": ["string"]
-}
-```
-
-#### Respuesta de Movimiento de Producto
-```json
-{
-    "movement_id": "string",
-    "date": "datetime",
-    "product_id": "string",
-    "movement_type": "string",
-    "quantity": integer,
-    "order_id": "string",
-    "current_stock": integer
-}
-```
-
-### Códigos de Estado
-
-- 200: Operación exitosa
-- 400: Error en la solicitud
-- 404: Recurso no encontrado
-- 500: Error interno del servidor
+### Monitoreo
+- Dashboard en tiempo real
+- Estadísticas de movimientos
+- Reportes de stock
+- Alertas y notificaciones
