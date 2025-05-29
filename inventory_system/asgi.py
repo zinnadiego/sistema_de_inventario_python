@@ -18,8 +18,9 @@ django_app = get_asgi_application()
 
 async def application(scope, receive, send):
     if scope["type"] == "http":
-        # Si la ruta comienza con /api/, usar FastAPI
-        if scope["path"].startswith("/api/"):
+        path = scope["path"]
+        # Rutas que deben ser manejadas por FastAPI
+        if path.startswith(("/api/", "/docs", "/openapi.json", "/redoc")):
             return await fastapi_app(scope, receive, send)
         # Para todas las demás rutas, usar Django
         return await django_app(scope, receive, send)

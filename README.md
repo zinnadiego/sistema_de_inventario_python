@@ -19,6 +19,28 @@ Este proyecto es un sistema de gestión de inventario que combina Django y FastA
 ### Base de Datos
 - **PostgreSQL** (a través de psycopg2-binary): Sistema de gestión de base de datos relacional
 
+## Sistema de Roles y Permisos
+
+El sistema implementa un modelo de permisos simplificado con dos roles principales:
+
+### Roles Disponibles
+- **Administrador**: Acceso completo al sistema con capacidad de gestión
+  - Puede crear/editar/eliminar productos
+  - Puede gestionar usuarios
+  - Acceso total al panel de administración
+  - Puede ver y modificar todos los módulos
+
+- **Lectura**: Acceso limitado para visualización
+  - Puede ver productos y su estado
+  - Acceso de solo lectura a los módulos
+  - No puede realizar modificaciones
+
+### Gestión de Usuarios
+- La creación y gestión de usuarios se realiza desde el panel de administración
+- Cada usuario debe tener asignado uno de los roles disponibles
+- Los permisos se asignan automáticamente según el rol seleccionado
+- La interfaz de gestión de usuarios ha sido simplificada para facilitar la administración
+
 ## Manual de Instalación y Uso
 
 ### Requisitos Previos
@@ -46,6 +68,11 @@ py manage.py migrate
 4. Crear un superusuario para acceder al panel de administración:
 ```bash
 py manage.py createsuperuser
+```
+
+5. Configurar los roles iniciales:
+```bash
+py manage.py setup_roles
 ```
 
 ### Ejecutar el Proyecto
@@ -141,3 +168,145 @@ El proyecto estará disponible en:
 - Todas las operaciones de la API requieren autenticación
 - Los endpoints están protegidos y requieren tokens válidos
 - El sistema predictivo requiere al menos 2 movimientos históricos por producto
+
+def save_model(self, request, obj, form, change):
+    is_new = not obj.pk
+    super().save_model(request, obj, form, change)
+    selected_group = form.cleaned_data.get('group')
+    obj.groups.clear()
+    if selected_group:
+        obj.groups.add(selected_group)
+        obj.is_staff = (selected_group.name == 'Administrador')
+    else:
+        obj.is_staff = False
+    obj.save()
+
+## API REST
+
+### Endpoints de Usuarios
+
+#### Listar Usuarios
+```bash
+GET /api/users/
+```
+
+#### Obtener Usuario
+```bash
+GET /api/users/{user_id}
+```
+
+#### Crear Usuario
+```bash
+POST /api/users/
+{
+    "username": "string",
+    "email": "user@example.com",
+    "password": "string",
+    "first_name": "string",
+    "last_name": "string",
+    "group": "string" // "Administrador" o "Lectura"
+}
+```
+
+#### Actualizar Usuario
+```bash
+PUT /api/users/{user_id}
+{
+    "email": "string",
+    "first_name": "string",
+    "last_name": "string",
+    "password": "string",
+    "is_active": boolean,
+    "group": "string"
+}
+```
+
+#### Eliminar Usuario
+```bash
+DELETE /api/users/{user_id}
+```
+
+### Endpoints de Productos
+
+#### Actualizar Producto
+```bash
+PUT /api/products/{product_id}
+{
+    "product_name": "string",
+    "sku": "string",
+    "category": "string",
+    "cost": float,
+    "sale_price": float,
+    "active": boolean
+}
+```
+
+#### Eliminar Producto
+```bash
+DELETE /api/products/{product_id}
+```
+
+### Endpoints de Stock
+
+#### Vender Producto
+```bash
+POST /api/products/{product_id}/sell
+{
+    "quantity": integer,
+    "order_id": "string",
+    "notes": "string"
+}
+```
+
+#### Comprar Producto
+```bash
+POST /api/products/{product_id}/buy
+{
+    "quantity": integer,
+    "order_id": "string",
+    "notes": "string"
+}
+```
+
+#### Actualizar Stock
+```bash
+PUT /api/products/{product_id}/stock
+{
+    "quantity": integer
+}
+```
+
+### Respuestas de la API
+
+#### Respuesta de Usuario
+```json
+{
+    "id": integer,
+    "username": "string",
+    "email": "string",
+    "first_name": "string",
+    "last_name": "string",
+    "is_active": boolean,
+    "groups": ["string"]
+}
+```
+
+#### Respuesta de Movimiento de Producto
+```json
+{
+    "movement_id": "string",
+    "date": "datetime",
+    "product_id": "string",
+    "movement_type": "string",
+    "quantity": integer,
+    "order_id": "string",
+    "current_stock": integer
+}
+```
+
+### Códigos de Estado
+
+- 200: Operación exitosa
+- 400: Error en la solicitud
+- 404: Recurso no encontrado
+- 500: Error interno del servidor
