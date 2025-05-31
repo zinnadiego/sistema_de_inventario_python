@@ -51,6 +51,20 @@ class CurrentStock(models.Model):
     def __str__(self):
         return f"{self.product.product_name} - Qty: {self.quantity}"
 
+    def save(self, *args, **kwargs):
+        # Actualizar el estado del stock basado en la cantidad y el umbral
+        if self.quantity <= 0:
+            self.stock_status = 'OUT_OF_STOCK'
+        elif self.quantity <= self.threshold:
+            self.stock_status = 'CRITICAL'
+        else:
+            self.stock_status = 'OK'
+        
+        # Calcular el costo total del inventario
+        self.total_inventory_cost = self.quantity * self.product.cost
+        
+        super().save(*args, **kwargs)
+
 class PredictorStock(models.Model):
     date = models.DateField()
     product = models.ForeignKey(Product, on_delete=models.CASCADE)

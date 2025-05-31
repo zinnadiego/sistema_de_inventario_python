@@ -72,18 +72,26 @@ class AdvancedStockPredictor:
         
     def _detect_trend(self, quantities: np.ndarray) -> str:
         """
-        Detecta la tendencia en los datos
+        Detecta la tendencia en los datos y considera casos especiales
         """
         if len(quantities) < 2:
             return "No hay suficientes datos para detectar tendencia"
-            
+        
+        # Si el último valor es 0 o muy cercano a 0, es una tendencia a la baja
+        if quantities[-1] <= 0.1:
+            return "Tendencia a la baja"
+        
         slope = np.polyfit(np.arange(len(quantities)), quantities, 1)[0]
         
-        if slope > 0.1:
+        # Ajustar los umbrales para ser más sensibles a los cambios
+        if slope > 0.05:
             return "Tendencia al alza"
-        elif slope < -0.1:
+        elif slope < -0.05:
             return "Tendencia a la baja"
         else:
+            # Verificar si hay una tendencia clara hacia el umbral crítico
+            if quantities[-1] <= min(quantities[:-1]) and slope < 0:
+                return "Tendencia a la baja"
             return "Tendencia estable"
             
     def train(self, historical_data: List[Dict]) -> None:
