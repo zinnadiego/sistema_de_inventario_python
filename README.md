@@ -11,21 +11,13 @@ Este proyecto es un sistema de gestión de inventario que combina Django y FastA
 - **Interfaz Moderna**: UI/UX optimizada con gráficos interactivos
 - **Sistema de Roles**: Control de acceso basado en roles
 
-## Tecnologías Utilizadas
+## Formas de Instalación
 
-### Backend
-- Django 5.0.1
-- FastAPI 0.109.0
-- PostgreSQL (Base de datos)
-- Scikit-learn (Predicciones)
-- Pandas (Análisis de datos)
+Hay dos formas de ejecutar el sistema:
+1. Usando Docker (recomendado para producción)
+2. Instalación local (recomendado para desarrollo)
 
-### Frontend
-- Bootstrap 5
-- Chart.js (Gráficos)
-- Font Awesome (Iconos)
-
-## Instalación con Docker (Recomendado)
+### 1. Instalación con Docker
 
 1. **Clonar el repositorio**:
 ```bash
@@ -48,16 +40,51 @@ docker-compose exec web python create_superuser.py
 docker-compose exec web python manage.py load_sample_data
 ```
 
-El sistema estará disponible en `http://localhost:8001`
+5. **Acceder al sistema**:
+- Frontend y API: http://localhost:8001
+- Panel de administración: http://localhost:8001/admin
+- Documentación API: http://localhost:8001/docs
 
-## Instalación Manual
+### Manejar contenedores
 
-1. **Clonar el repositorio y crear entorno virtual**:
+1. **Detener los contenedores** (no borra los datos):
 ```bash
-git clone <url-del-repositorio>
-cd <nombre-del-directorio>
+docker-compose down
+```
+
+2. **Reiniciar los contenedores** (los datos se mantienen):
+```bash
+docker-compose up -d
+```
+
+3. **Si quieres borrar TODO** (¡esto SÍ borrará los datos!):
+```bash
+docker-compose down -v
+```
+
+4. **Hacer backup de los datos** (opcional, pero recomendado):
+```bash
+# Obtener el ID del contenedor de PostgreSQL
+docker ps
+
+# Hacer backup de la base de datos
+docker exec -t [ID_CONTENEDOR_POSTGRES] pg_dump -U postgres inventory_db > backup_inventory.sql
+```
+
+IMPORTANTE: 
+- Los datos persisten mientras no elimines los volúmenes de Docker
+- Usar `docker-compose down` es seguro, mantiene los datos
+- Solo se pierden los datos si usas `docker-compose down -v` o borras manualmente los volúmenes
+
+### 2. Instalación Local (Sin Docker)
+
+1. **Crear y activar el entorno virtual**:
+```bash
 python -m venv venv
-source venv/bin/activate  # En Windows: venv\Scripts\activate
+# En Windows:
+venv\Scripts\activate
+# En Linux/Mac:
+source venv/bin/activate
 ```
 
 2. **Instalar dependencias**:
@@ -65,29 +92,77 @@ source venv/bin/activate  # En Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-3. **Configurar la base de datos**:
-- Crear una base de datos PostgreSQL
-- Copiar `.env.example` a `.env` y configurar las variables
+3. **Configurar PostgreSQL**:
+- Instalar PostgreSQL si no está instalado
+- Crear una base de datos nueva:
+```sql
+CREATE DATABASE inventory_db;
+```
+- Copiar `.env.example` a `.env` y configurar:
+```
+DEBUG=True
+# Puedes usar esta SECRET_KEY para desarrollo local
+SECRET_KEY=django-insecure-m9ouo=^vl*yy^nqedux704q4ei7vt0d*lnt(vj7j#3u$-0g%xb
+DB_NAME=inventory_db
+DB_USER=tu_usuario_db
+DB_PASSWORD=tu_contraseña_db
+DB_HOST=localhost
+DB_PORT=5432
+```
+
+NOTA: En un ambiente de producción, deberías generar una nueva SECRET_KEY. Puedes generarla usando:
+```python
+python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
+```
 
 4. **Aplicar migraciones**:
 ```bash
+python manage.py makemigrations
 python manage.py migrate
 ```
 
-5. **Crear superusuario**:
+5. **Crear superusuario y grupos**:
 ```bash
 python create_superuser.py
+# Esto crea:
+# - Usuario: admin, Contraseña: Admin123!
+# - Grupos: Administrador y Lectura
 ```
 
 6. **Cargar datos de ejemplo**:
 ```bash
 python manage.py load_sample_data
+# Carga productos como Dell XPS 13, LG Monitor, etc.
 ```
 
-7. **Iniciar el servidor**:
+7. **Recolectar archivos estáticos**:
+```bash
+python manage.py collectstatic --noinput
+```
+
+8. **Iniciar el servidor**:
 ```bash
 python manage.py runserver 8001
 ```
+
+9. **Acceder al sistema**:
+- Frontend y API: http://localhost:8001
+- Panel de administración: http://localhost:8001/admin
+- Documentación API: http://localhost:8001/docs
+
+## Tecnologías Utilizadas
+
+### Backend
+- Django 5.0.1
+- FastAPI 0.109.0
+- PostgreSQL (Base de datos)
+- Scikit-learn (Predicciones)
+- Pandas (Análisis de datos)
+
+### Frontend
+- Bootstrap 5
+- Chart.js (Gráficos)
+- Font Awesome (Iconos)
 
 ## Estructura del Proyecto
 
@@ -147,30 +222,88 @@ Documentación completa disponible en `/docs` o `/redoc`
 #### Endpoints Principales:
 
 - **Autenticación**:
-  ```bash
-  POST /api/token
-  ```
+```bash
+POST /api/token/
+# Obtener token de acceso
+{
+    "username": "usuario",
+    "password": "contraseña"
+}
+```
 
 - **Productos**:
-  ```bash
-  GET /api/products
-  POST /api/products
-  GET /api/products/{id}
-  ```
+```bash
+GET /api/products/              # Listar todos los productos
+POST /api/products/             # Crear nuevo producto
+GET /api/products/{id}/         # Obtener producto específico
+PUT /api/products/{id}/         # Actualizar producto
+DELETE /api/products/{id}/      # Eliminar producto
+```
 
-- **Stock**:
-  ```bash
-  GET /api/inventory/stock
-  POST /api/inventory/movements
-  ```
+- **Inventario**:
+```bash
+GET /api/inventory/movements/   # Listar movimientos
+POST /api/inventory/movements/  # Crear movimiento
+GET /api/inventory/stock/       # Ver stock actual
+```
 
 - **Predicciones**:
-  ```bash
-  GET /api/products/{id}/predict
-  ```
+```bash
+GET /api/products/{id}/predict  # Obtener predicciones de stock
+```
 
-## Credenciales por Defecto
+Todos los endpoints (excepto autenticación) requieren un token válido en el header:
+```bash
+Authorization: Bearer {tu_token}
+```
 
-- **Admin**:
-  - Usuario: admin2
-  - Contraseña: admin123
+### Acceso al Panel de Administración
+
+Para acceder al panel de administración de Django:
+
+1. URL: `http://localhost:8001/admin`
+2. Credenciales por defecto:
+   - Usuario: `admin`
+   - Contraseña: `Admin123!`
+
+### Ejemplos de Operaciones Comunes
+
+#### Actualizar Registros usando Django Shell
+
+Para realizar actualizaciones masivas de registros, puedes usar el shell de Django. Aquí hay algunos ejemplos:
+
+1. **Acceder al shell**:
+```bash
+# En instalación local
+python manage.py shell
+
+# Con Docker
+docker-compose exec web python manage.py shell
+```
+
+2. **Ejemplo: Actualizar fechas de todos los movimientos**:
+```python
+# Importar módulos necesarios
+from inventory.models import InventoryMovement
+from datetime import datetime
+import pytz
+
+# Crear la fecha objetivo
+target_date = datetime(2025, 6, 1, 10, 0, 0, tzinfo=pytz.UTC)
+
+# Actualizar todos los registros
+InventoryMovement.objects.all().update(date=target_date)
+
+# Verificar la actualización
+first_movement = InventoryMovement.objects.first()
+print(f"ID: {first_movement.movement_id}, Fecha: {first_movement.date}")
+```
+
+3. **Otros ejemplos de actualizaciones masivas**:
+```python
+# Actualizar estado de productos
+Product.objects.all().update(active=True)
+
+# Actualizar stock de un producto específico
+CurrentStock.objects.filter(product_id='P001').update(quantity=100)
+```
