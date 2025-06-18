@@ -150,46 +150,43 @@ python manage.py runserver 8001
 - Panel de administración: http://localhost:8001/admin
 - Documentación API: http://localhost:8001/docs
 
-## Tecnologías Utilizadas
+## Ejecución de Tests
 
-### Backend
-- Django 5.0.1
-- FastAPI 0.109.0
-- PostgreSQL (Base de datos)
-- Scikit-learn (Predicciones)
-- Pandas (Análisis de datos)
+El proyecto incluye una suite de tests automatizados. Hay varias formas de ejecutarlos:
 
-### Frontend
-- Bootstrap 5
-- Chart.js (Gráficos)
-- Font Awesome (Iconos)
-
-## Estructura del Proyecto
-
-```
-├── api/                 # Endpoints FastAPI
-├── inventory/           # App principal Django
-│   ├── management/     # Comandos personalizados
-│   ├── migrations/     # Migraciones DB
-│   ├── models.py       # Modelos de datos
-│   └── views.py        # Vistas Django
-├── templates/          # Plantillas HTML
-├── static/             # Archivos estáticos
-└── docker/             # Configuración Docker
-```
-
-## Datos de Ejemplo
-
-El sistema incluye un comando para cargar datos de ejemplo que incluye:
-- Productos de tecnología con diferentes categorías
-- Histórico de movimientos
-- Predicciones iniciales
-- Umbrales de stock configurados
-
-Para cargar los datos:
+### 1. Ejecutar todos los tests
 ```bash
-python manage.py load_sample_data
+# Usando Docker (recomendado)
+docker-compose exec web python manage.py test
+
+# Localmente (sin Docker)
+python manage.py test
 ```
+
+### 2. Ver resultados detallados
+```bash
+# Modo verbose (muestra más detalles)
+docker-compose exec web python manage.py test -v 2
+
+# Modo muy detallado (muestra todo)
+docker-compose exec web python manage.py test -v 3
+```
+
+### 3. Ejecutar tests específicos
+```bash
+# Ejecutar tests de una app específica
+docker-compose exec web python manage.py test inventory
+
+# Ejecutar un test específico
+docker-compose exec web python manage.py test inventory.tests.ProductModelTest
+```
+
+Los tests verifican:
+- Creación y validación de productos
+- Gestión de stock
+- Cálculos de inventario
+- Predicciones de ML
+- Endpoints de la API
 
 ## Características del Sistema
 

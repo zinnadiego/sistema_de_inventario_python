@@ -7,9 +7,11 @@ from typing import List, Optional, Literal
 from datetime import datetime
 from pydantic import BaseModel, conint
 from asgiref.sync import sync_to_async
-from .predictor import AdvancedStockPredictor
+from api.predictor import AdvancedStockPredictor
 from decimal import Decimal
 import uuid
+from fastapi.openapi.utils import get_openapi
+import json
 
 # Configurar Django
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'inventory_system.settings')
@@ -666,7 +668,22 @@ async def get_current_stock(token: str = Depends(oauth2_scheme)):
             detail=str(e)
         )
 
-# Punto de entrada para uvicorn
+def export_openapi_schema():
+    """
+    Exporta el esquema OpenAPI a un archivo JSON.
+    Este archivo puede ser subido a Swagger Hub.
+    """
+    openapi_schema = get_openapi(
+        title=app.title,
+        version=app.version,
+        description=app.description,
+        routes=app.routes,
+    )
+    
+    with open("openapi.json", "w") as f:
+        json.dump(openapi_schema, f, indent=2)
+    
+    print("Esquema OpenAPI exportado a 'openapi.json'")
+
 if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8001) 
+    export_openapi_schema() 
